@@ -223,4 +223,21 @@ router.delete('/trainees/:id', adminAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+// ---- 備份匯出／匯入（伺服器免費方案重啟會清空資料，供上級手動備份用） ----
+router.get('/backup', adminAuth, (req, res) => {
+  const db = readDb();
+  const dateStr = new Date().toISOString().slice(0, 10);
+  res.setHeader('Content-Disposition', `attachment; filename="peirou-backup-${dateStr}.json"`);
+  res.json(db);
+});
+
+router.post('/backup/restore', adminAuth, (req, res) => {
+  const data = req.body;
+  if (!data || !Array.isArray(data.trainees) || !Array.isArray(data.submissions) || !Array.isArray(data.pinUnlocks)) {
+    return res.status(400).json({ error: '備份檔案格式不正確，請確認上傳的是本系統匯出的備份檔' });
+  }
+  writeDb({ trainees: data.trainees, submissions: data.submissions, pinUnlocks: data.pinUnlocks });
+  res.json({ ok: true, trainees: data.trainees.length, submissions: data.submissions.length });
+});
+
 module.exports = router;

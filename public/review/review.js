@@ -178,9 +178,66 @@
     }
   }
 
+  function backupMsg(text, isError) {
+    const box = el('backupMsg');
+    box.textContent = text;
+    box.style.color = isError ? '#c0392b' : '#2e7d32';
+  }
+
+  async function exportBackup() {
+    const btn = el('backupExportBtn');
+    btn.disabled = true;
+    try {
+      const data = await api('/api/backup');
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dateStr = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `peirou-backup-${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      backupMsg(`已匯出備份（${data.trainees.length} 位夥伴、${data.submissions.length} 筆紀錄），請妥善保存這個檔案。`, false);
+    } catch (err) {
+      backupMsg(err.message, true);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function importBackup(file) {
+    const btn = el('backupImportBtn');
+    btn.disabled = true;
+    try {
+      const text = await file.text();
+      let data;
+      try { data = JSON.parse(text); } catch { throw new Error('檔案不是正確的JSON格式'); }
+      if (!confirm('匯入備份會覆蓋目前所有資料，確定要繼續嗎？')) return;
+      const result = await api('/api/backup/restore', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      backupMsg(`已還原備份（${result.trainees} 位夥伴、${result.submissions} 筆紀錄）。`, false);
+      await load();
+    } catch (err) {
+      backupMsg(err.message, true);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
   function initApp() {
     el('refreshBtn').addEventListener('click', load);
     el('pendingOnly').addEventListener('change', render);
+    el('backupExportBtn').addEventListener('click', exportBackup);
+    el('backupImportBtn').addEventListener('click', () => el('backupFileInput').click());
+    el('backupFileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) importBackup(file);
+      e.target.value = '';
+    });
     load();
     setInterval(load, 15000);
   }

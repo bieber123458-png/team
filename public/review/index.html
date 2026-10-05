@@ -37,8 +37,12 @@
         <label style="font-size:.82rem;display:flex;align-items:center;gap:6px;">
           <input type="checkbox" id="pendingOnly" /> 只顯示有待審核項目的夥伴
         </label>
+        <button id="backupExportBtn" class="secondary">匯出備份</button>
+        <button id="backupImportBtn" class="secondary">匯入備份</button>
+        <input type="file" id="backupFileInput" accept="application/json" style="display:none;" />
         <a href="../" style="font-size:.82rem;color:var(--ink-soft);">← 回到新人任務頁</a>
       </div>
+      <div id="backupMsg" style="font-size:.8rem;margin:6px 0;"></div>
       <div id="traineeList"></div>
     </main>
   </div>
